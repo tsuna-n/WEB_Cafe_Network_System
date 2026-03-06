@@ -1,28 +1,34 @@
-import express, { Express, Request, Response, } from "express";
+import express from "express";
+import cors from "cors";
+import printerRoutes from "./routes/printer";
+import { initDB } from "./service/db";
 
-const cors = require('cors');
-const { initDB } = require('./db');
-const app: Express = express();
+const app = express();
+const port = 3003;
+
 app.use(cors());
-const port: number = 3003;
+app.use(express.json());
 
-app.get("/", (req: Request, res: Response) => {
+app.get("/", (req, res) => {
   res.json({
-    message: "Hello Express + TypeScript!!",
+    message: "POS Cafe API Running",
   });
 });
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`Application is running on port ${port}`);
-});
+app.use("/printer", printerRoutes);
 
-initDB()
-  .then(() => {
-    app.listen(port, '0.0.0.0', () => {
-      console.log(`POS Cafe API Server running on http://0.0.0.0:${port}`);
+async function startServer() {
+  try {
+    await initDB();
+
+    app.listen(port, "0.0.0.0", () => {
+      console.log(`Server running on http://0.0.0.0:${port}`);
     });
-  })
-  .catch((err: any) => {
-    console.error('Failed to initialize database:', err);
+
+  } catch (err) {
+    console.error("DB init failed:", err);
     process.exit(1);
-  });
+  }
+}
+
+startServer();
