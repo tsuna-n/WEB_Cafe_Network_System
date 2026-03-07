@@ -36,8 +36,8 @@ router.post("/", async (req: Request, res: Response) => {
         const orderId = crypto.randomUUID();
 
         await client.query(
-            `INSERT INTO orders (id, order_number, total, payment_method, cashier_name)
-       VALUES ($1, $2, $3, $4, $5)`,
+            `INSERT INTO orders (id, order_number, total, payment_method, status, cashier_name)
+       VALUES ($1, $2, $3, $4, 'pending', $5)`,
             [orderId, orderNumber, total, payment_method, "Admin"]
         );
 
@@ -52,9 +52,8 @@ router.post("/", async (req: Request, res: Response) => {
 
         await client.query("COMMIT");
 
-        // ดึง order ที่สร้างกลับไป
         const { rows: orderRows } = await client.query(
-            "SELECT id AS order_id, order_number, total, payment_method, cashier_name, created_at FROM orders WHERE id = $1",
+            "SELECT id AS order_id, order_number, total, payment_method, status, cashier_name, created_at FROM orders WHERE id = $1",
             [orderId]
         );
 
@@ -76,17 +75,26 @@ router.post("/", async (req: Request, res: Response) => {
 // ─── GET /?date=YYYY-MM-DD — ดึง orders ──────────
 router.get("/", async (req: Request, res: Response) => {
     try {
-        const { date } = req.query;
+        const { date, status } = req.query;
 
         let query = `
-      SELECT id AS order_id, order_number, total, payment_method, cashier_name, created_at
+      SELECT id AS order_id, order_number, total, payment_method, status, cashier_name, created_at
       FROM orders
     `;
         const params: string[] = [];
+        const conditions: string[] = [];
 
         if (date && typeof date === "string") {
-            query += " WHERE created_at::date = $1";
             params.push(date);
+            conditions.push(`created_at::date = $${params.length}`);
+        }
+        if (status && typeof status === "string") {
+            params.push(status);
+            conditions.push(`status = $${params.length}`);
+        }
+
+        if (conditions.length > 0) {
+            query += " WHERE " + conditions.join(" AND ");
         }
 
         query += " ORDER BY created_at DESC LIMIT 50";
@@ -134,6 +142,32 @@ router.get("/summary/daily", async (req: Request, res: Response) => {
         res.json(rows[0]);
     } catch (err) {
         console.error("Error fetching daily summary:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// ─── PATCH /:id/status — อัพเดทสถานะ order ───────
+router.patch("/:id/status", async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!status || !['pending', 'completed'].includes(status)) {
+            return res.status(400).json({ error: "Invalid status. Use 'pending' or 'completed'." });
+        }
+
+        const { rowCount } = await pool.query(
+            "UPDATE orders SET status = $1 WHERE id = $2",
+            [status, id]
+        );
+
+        if (rowCount === 0) {
+            return res.status(404).json({ error: "Order not found" });
+        }
+
+        res.json({ success: true, order_id: id, status });
+    } catch (err) {
+        console.error("Error updating order status:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 });

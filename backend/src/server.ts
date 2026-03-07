@@ -1,6 +1,9 @@
 import express from "express";
 import cors from "cors";
 import printerRoutes from "./routes/printer";
+import menuRoutes from "./routes/menu";
+import orderRoutes from "./routes/orders";
+import healthRoutes from "./routes/health";
 import { initDB } from "./service/db";
 
 const app = express();
@@ -16,6 +19,9 @@ app.get("/", (req, res) => {
 });
 
 app.use("/printer", printerRoutes);
+app.use("/api/menu", menuRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/health", healthRoutes);
 
 async function startServer() {
   try {

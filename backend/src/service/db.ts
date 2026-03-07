@@ -40,9 +40,15 @@ export async function initDB() {
         order_number INTEGER NOT NULL,
         total DOUBLE PRECISION NOT NULL,
         payment_method TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
         cashier_name TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+    `);
+
+    // migration: เพิ่ม status column ถ้ายังไม่มี
+    await client.query(`
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
     `);
 
     await client.query(`
@@ -67,25 +73,6 @@ export async function initDB() {
         ('tea','ชา','🍵',2),
         ('bakery','เบเกอรี่','🥐',3),
         ('other','เครื่องดื่มอื่นๆ','🥤',4)
-        ON CONFLICT DO NOTHING;
-      `);
-
-      await client.query(`
-        INSERT INTO menu_items (name, name_en, price, category_id, description) VALUES
-        ('เอสเปรสโซ่','Espresso',60,'coffee','เข้มข้น กลมกล่อม'),
-        ('อเมริกาโน่','Americano',65,'coffee','ร้อน / เย็น'),
-        ('ลาเต้','Latte',75,'coffee','นมสดเข้มข้น'),
-        ('คาปูชิโน่','Cappuccino',75,'coffee','ฟองนมนุ่ม'),
-        ('มอคค่า','Mocha',85,'coffee','ช็อกโกแลตผสม'),
-        ('คาราเมล มัคคิอาโต้','Caramel Macchiato',90,'coffee','คาราเมลหวาน'),
-        ('กรีนที ลาเต้','Green Tea Latte',75,'tea','มัทฉะแท้'),
-        ('ชาไทย','Thai Milk Tea',65,'tea','ชาไทยต้นตำรับ'),
-        ('เอิร์ล เกรย์','Earl Grey',60,'tea','กลิ่นเบอร์กามอต'),
-        ('ครัวซองต์','Croissant',55,'bakery','เนยสดนำเข้า'),
-        ('มัฟฟิน','Muffin',45,'bakery','บลูเบอร์รี่ / ช็อก'),
-        ('ช็อกโกแลต เค้ก','Chocolate Cake',85,'bakery','ช็อกโกแลตเข้มข้น'),
-        ('สมูทตี้','Smoothie',80,'other','ผลไม้สด'),
-        ('เลมอนเนด','Lemonade',55,'other','เปรี้ยวสดชื่น')
         ON CONFLICT DO NOTHING;
       `);
     }
