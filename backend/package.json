@@ -14,16 +14,23 @@
   "dependencies": {
     "@types/cors": "^2.8.19",
     "@types/pg": "^8.18.0",
+    "axios": "^1.13.6",
     "canvas": "^3.2.1",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "jsqr": "^1.4.0",
+    "multer": "^2.1.1",
     "node-thermal-printer": "^4.6.0",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "promptpay-qr": "^0.5.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/multer": "^2.1.0",
     "@types/node": "^25.3.5",
+    "@types/qrcode": "^1.5.6",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"

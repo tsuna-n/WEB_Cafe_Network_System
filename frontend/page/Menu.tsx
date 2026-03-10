@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { fetchCategories, fetchMenuItems, createOrder, type Category, type MenuItem } from '@/service/api'
+import { fetchCategories, fetchMenuItems, type Category, type MenuItem } from '@/service/api'
+import PaymentModal from '@/page/component/PaymentModal'
 
 type CartItem = MenuItem & { qty: number }
-type PaymentMethod = 'cash' | 'promptpay' | 'card'
 
 // Emoji map สำหรับแต่ละ category (ใช้แสดงบนการ์ดเมนู)
 const categoryEmoji: Record<string, string> = {
@@ -23,8 +23,6 @@ export default function Menu({ positionId }: { positionId?: string }) {
   const [loading, setLoading] = useState(true)
   const [showCart, setShowCart] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
-  const [payMethod, setPayMethod] = useState<PaymentMethod>('cash')
-  const [ordering, setOrdering] = useState(false)
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -70,28 +68,6 @@ export default function Menu({ positionId }: { positionId?: string }) {
 
   const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0)
   const totalQty = cart.reduce((sum, i) => sum + i.qty, 0)
-
-  const handleCheckout = async (method: PaymentMethod) => {
-    setPayMethod(method)
-    setOrdering(true)
-    try {
-      const orderItems = cart.map((c) => ({
-        item_id: c.id,
-        item_name: c.name,
-        qty: c.qty,
-        price: c.price,
-      }))
-      await createOrder(orderItems, method, positionId)
-      setCart([])
-      setShowPayment(false)
-      alert('สั่งเรียบร้อย! 🎉')
-    } catch (err) {
-      console.error('สั่งไม่สำเร็จ:', err)
-      alert('สั่งไม่สำเร็จ กรุณาลองอีกครั้ง')
-    } finally {
-      setOrdering(false)
-    }
-  }
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = 'auto'; }
@@ -314,31 +290,17 @@ export default function Menu({ positionId }: { positionId?: string }) {
         </div>
       </div>
 
-      {/* --- PAYMENT MODAL --- */}
-      {showPayment && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
-          <div className="bg-[#26211d] border border-[#3e352d] rounded-3xl w-full max-w-[400px] p-6 flex flex-col gap-4 shadow-2xl animate-[slideUp_0.2s_ease-out]">
-            <h3 className="font-semibold text-xl text-center mb-2 text-white">
-              เลือกวิธีชำระเงิน
-            </h3>
-
-            <button onClick={() => handleCheckout('cash')} disabled={ordering} className="border border-[#4a3f35] bg-[#2a241f] hover:bg-[#362e28] rounded-2xl p-4 text-left flex gap-4 items-center transition-colors disabled:opacity-50">
-              <span className="text-3xl drop-shadow-sm">💵</span>
-              <span className="text-lg font-medium">{ordering && payMethod === 'cash' ? 'กำลังสั่ง...' : 'เงินสด'}</span>
-            </button>
-            <button onClick={() => handleCheckout('promptpay')} disabled={ordering} className="border border-[#4a3f35] bg-[#2a241f] hover:bg-[#362e28] rounded-2xl p-4 text-left flex gap-4 items-center transition-colors disabled:opacity-50">
-              <span className="text-3xl drop-shadow-sm">📱</span>
-              <span className="text-lg font-medium">{ordering && payMethod === 'promptpay' ? 'กำลังสั่ง...' : 'สแกนจ่าย / PromptPay'}</span>
-            </button>
-            <button
-              onClick={() => { setShowPayment(false); setShowCart(true); }}
-              className="mt-4 text-sm text-gray-400 hover:text-white text-center py-3 rounded-xl hover:bg-[#3e352d] transition-colors"
-            >
-              ย้อนกลับไปตะกร้า
-            </button>
-          </div>
-        </div>
-      )}
+      <PaymentModal
+        isOpen={showPayment}
+        onClose={() => setShowPayment(false)}
+        items={cart}
+        total={total}
+        positionId={positionId}
+        onSuccess={() => {
+          setCart([])
+          setShowPayment(false)
+        }}
+      />
     </main>
   )
 }

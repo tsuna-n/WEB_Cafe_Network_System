@@ -13,6 +13,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         if (!user) {
             router.replace('/login')
         } else {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setAuthorized(true)
         }
     }, [router])

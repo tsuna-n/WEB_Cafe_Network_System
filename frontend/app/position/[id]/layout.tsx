@@ -1,4 +1,4 @@
-import Navbar from "@/component/Navbar"
+import Navbar from "@/page/component/Navbar"
 import { decodePosition } from "@/service/tableHash"
 
 export default async function PositionLayout({

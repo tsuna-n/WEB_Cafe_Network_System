@@ -1,5 +1,5 @@
-import OrderBoard from '@/component/OrderBoard'
-import AuthGuard from '@/component/AuthGuard'
+import OrderBoard from '@/page/OrderBoard'
+import AuthGuard from '@/page/component/AuthGuard'
 
 export default function OrdersPage() {
     return (

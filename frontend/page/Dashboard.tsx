@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchDailySummary, fetchOrders, clearSession, type DailySummary, type Order } from '@/service/api'
+import { getServerUrl } from '@/service/config'
 //components
 import SummaryCard from './component/SummaryCard'
 
@@ -51,6 +52,28 @@ function timeAgo(iso: string) {
     return `${Math.floor(h / 24)} วันที่แล้ว`
 }
 
+/* ─── Receipt Modal ─── */
+function ReceiptModal({ url, onClose }: { url: string; onClose: () => void }) {
+    return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="absolute inset-0 cursor-zoom-out" onClick={onClose} />
+            <div className="relative max-w-full max-h-full flex flex-col items-center">
+                <button 
+                    onClick={onClose}
+                    className="absolute -top-12 right-0 text-white bg-white/10 hover:bg-white/20 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+                >
+                    ✕
+                </button>
+                <img 
+                    src={`${getServerUrl()}${url}`} 
+                    alt="Receipt" 
+                    className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/10 animate-in zoom-in-95 duration-300"
+                />
+            </div>
+        </div>
+    )
+}
+
 /* ─── Component ──────────────────────────────────── */
 
 export default function Dashboard() {
@@ -58,6 +81,7 @@ export default function Dashboard() {
     const [orders, setOrders] = useState<Order[]>([])
     const [loading, setLoading] = useState(true)
     const [isDemo, setIsDemo] = useState(false)
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
     const load = useCallback(async () => {
         setLoading(true)
@@ -231,6 +255,7 @@ export default function Dashboard() {
                                                 <th className="text-left px-5 py-3 font-medium">#</th>
                                                 <th className="text-left px-3 py-3 font-medium">รายการ</th>
                                                 <th className="text-center px-3 py-3 font-medium">ชำระ</th>
+                                                <th className="text-right px-3 py-3 font-medium text-center">สถานะ</th>
                                                 <th className="text-right px-3 py-3 font-medium">ยอด</th>
                                                 <th className="text-right px-5 py-3 font-medium">เวลา</th>
                                             </tr>
@@ -242,7 +267,18 @@ export default function Dashboard() {
                                                     className="border-b border-[#3e352d]/50 hover:bg-[#362e28] transition-colors"
                                                     style={{ animation: `fadeUp 0.3s ease-out ${0.05 * i}s both` }}
                                                 >
-                                                    <td className="px-5 py-3 text-[#cba365] font-semibold">{o.order_number}</td>
+                                                    <td className="px-5 py-3 text-[#cba365] font-semibold flex items-center gap-2">
+                                                        {o.order_number}
+                                                        {o.receipt_url && (
+                                                            <button
+                                                                onClick={() => setPreviewUrl(o.receipt_url!)}
+                                                                className="text-[10px] bg-blue-500/10 border border-blue-500/30 text-blue-400 p-1 rounded hover:bg-blue-500/20 transition-colors"
+                                                                title="ดูสลิป"
+                                                            >
+                                                                📄
+                                                            </button>
+                                                        )}
+                                                    </td>
                                                     <td className="px-3 py-3 text-gray-300 max-w-[200px] truncate">
                                                         {o.items.map(it => `${it.item_name} x${it.qty}`).join(', ')}
                                                     </td>
@@ -256,6 +292,17 @@ export default function Dashboard() {
                                                             {payLabel(o.payment_method)}
                                                         </span>
                                                     </td>
+                                                    <td className="px-3 py-3 text-center">
+                                                        {o.payment_status === 'paid' ? (
+                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold">
+                                                                PAID
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">
+                                                                UNPAID
+                                                            </span>
+                                                        )}
+                                                    </td>
                                                     <td className="px-3 py-3 text-right font-semibold">{o.total.toLocaleString()}฿</td>
                                                     <td className="px-5 py-3 text-right text-gray-500 text-xs whitespace-nowrap">
                                                         {timeAgo(o.created_at)}
@@ -264,7 +311,7 @@ export default function Dashboard() {
                                             ))}
                                             {orders.length === 0 && (
                                                 <tr>
-                                                    <td colSpan={5} className="text-center py-12 text-gray-500">
+                                                    <td colSpan={6} className="text-center py-12 text-gray-500">
                                                         ยังไม่มีออเดอร์วันนี้
                                                     </td>
                                                 </tr>
@@ -321,10 +368,11 @@ export default function Dashboard() {
                     </>
                 )}
             </div>
+
+            {/* Receipt Modal */}
+            {previewUrl && (
+                <ReceiptModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
+            )}
         </main>
     )
 }
-
-/* ─── Sub-components ─────────────────────────────── */
-
-

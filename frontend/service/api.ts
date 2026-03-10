@@ -39,8 +39,10 @@ export interface Order {
   total: number;
   payment_method: string;
   status: 'pending' | 'completed';
+  payment_status: 'pending' | 'paid';
   position_id: string | null;
   cashier_name: string;
+  receipt_url?: string;
   created_at: string;
   items: OrderItem[];
 }
@@ -154,6 +156,16 @@ export async function updateOrderStatus(
   return request(`/api/orders/${orderId}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
+  });
+}
+
+export async function updatePaymentStatus(
+  orderId: string,
+  payment_status: 'pending' | 'paid'
+): Promise<{ success: boolean; order_id: string; payment_status: string }> {
+  return request(`/api/payments/status/${orderId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ payment_status }),
   });
 }
 

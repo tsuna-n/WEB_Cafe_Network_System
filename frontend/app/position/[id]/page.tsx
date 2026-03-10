@@ -1,4 +1,4 @@
-import Menu from "@/component/Menu"
+import Menu from "@/page/Menu"
 import { decodePosition } from "@/service/tableHash"
 
 export default async function PositionPage({ params }: { params: Promise<{ id: string }> }) {

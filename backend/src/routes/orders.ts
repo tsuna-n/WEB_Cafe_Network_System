@@ -53,7 +53,7 @@ router.post("/", async (req: Request, res: Response) => {
         await client.query("COMMIT");
 
         const { rows: orderRows } = await client.query(
-            "SELECT id AS order_id, order_number, total, payment_method, status, position_id, cashier_name, created_at FROM orders WHERE id = $1",
+            "SELECT id AS order_id, order_number, total, payment_method, status, payment_status, position_id, cashier_name, receipt_url, created_at FROM orders WHERE id = $1",
             [orderId]
         );
 
@@ -84,8 +84,10 @@ router.get("/", async (req: Request, res: Response) => {
                 o.total, 
                 o.payment_method, 
                 o.status, 
+                o.payment_status,
                 o.position_id, 
                 o.cashier_name, 
+                o.receipt_url,
                 o.created_at,
                 COALESCE(
                     json_agg(
