@@ -69,10 +69,10 @@ export async function printReceipt(items: OrderItem[]): Promise<boolean> {
     // --- ส่วนหัว ---
     ctx.textAlign = "center";
     ctx.font = 'bold 36px "Sarabun", "Tahoma", sans-serif';
-    ctx.fillText("ร้านกาแฟ POS", canvasWidth / 2, 20);
+    ctx.fillText("LEBOIS CAFE", canvasWidth / 2, 20);
 
     ctx.font = 'bold 26px "Sarabun", "Tahoma", sans-serif';
-    ctx.fillText("ใบรับออเดอร์ (ครัว)", canvasWidth / 2, 70);
+    ctx.fillText("ขอบคุณที่ใช้บริการ", canvasWidth / 2, 70);
     ctx.fillRect(20, 110, canvasWidth - 40, 3);
 
     // --- รายการสินค้า ---
