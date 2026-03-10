@@ -11,7 +11,7 @@ import path from "path";
 import fs from "fs";
 
 const app = express();
-const port = 3003;
+const port = Number(process.env.PORT) || 3003;
 
 app.use(cors());
 app.use(express.json());
