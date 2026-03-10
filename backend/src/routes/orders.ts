@@ -75,7 +75,7 @@ router.post("/", async (req: Request, res: Response) => {
 // ─── GET /?date=YYYY-MM-DD — ดึง orders ──────────
 router.get("/", async (req: Request, res: Response) => {
     try {
-        const { date, status } = req.query;
+        const { date, status, payment_status } = req.query;
 
         let query = `
             SELECT 
@@ -114,6 +114,10 @@ router.get("/", async (req: Request, res: Response) => {
             params.push(status);
             conditions.push(`o.status = $${params.length}`);
         }
+        if (payment_status && typeof payment_status === "string") {
+            params.push(payment_status);
+            conditions.push(`o.payment_status = $${params.length}`);
+        }
 
         if (conditions.length > 0) {
             query += " WHERE " + conditions.join(" AND ");
@@ -145,7 +149,7 @@ router.get("/summary/daily", async (req: Request, res: Response) => {
         COUNT(*)   FILTER (WHERE payment_method = 'card')          AS card_orders,
         COALESCE(SUM(total) FILTER (WHERE payment_method = 'card'), 0)       AS card_revenue
       FROM orders
-      WHERE created_at::date = $1 AND status = 'completed'  -- Only count confirmed orders
+      WHERE created_at::date = $1 AND payment_status = 'paid'
     `,
             [date]
         );

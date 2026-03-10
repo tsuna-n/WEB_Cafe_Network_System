@@ -89,7 +89,7 @@ export default function Dashboard() {
             const today = new Date().toISOString().slice(0, 10)
             const [s, o] = await Promise.all([
                 fetchDailySummary(today),
-                fetchOrders(today, 'completed'),
+                fetchOrders(today, undefined, 'paid'),
             ])
             setSummary(s)
             setOrders(o)
@@ -293,15 +293,9 @@ export default function Dashboard() {
                                                         </span>
                                                     </td>
                                                     <td className="px-3 py-3 text-center">
-                                                        {o.payment_status === 'paid' ? (
-                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold">
-                                                                PAID
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold">
-                                                                UNPAID
-                                                            </span>
-                                                        )}
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold">
+                                                            จ่ายเงินสำเร็จ
+                                                        </span>
                                                     </td>
                                                     <td className="px-3 py-3 text-right font-semibold">{o.total.toLocaleString()}฿</td>
                                                     <td className="px-5 py-3 text-right text-gray-500 text-xs whitespace-nowrap">

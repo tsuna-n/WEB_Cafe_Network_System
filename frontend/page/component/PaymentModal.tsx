@@ -16,12 +16,13 @@ interface PaymentModalProps {
   onSuccess: () => void
 }
 
-type PaymentStep = 'selection' | 'processing' | 'cash_instruction' | 'promptpay_qr' | 'success'
+type PaymentStep = 'selection' | 'confirm' | 'processing' | 'cash_instruction' | 'promptpay_qr' | 'success'
 
 export default function PaymentModal({
   isOpen, onClose, items, total, positionId, onSuccess
 }: PaymentModalProps) {
   const [step, setStep] = useState<PaymentStep>('selection')
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null)
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null)
   const [qrImage, setQrImage] = useState<string | null>(null)
   const [slipFile, setSlipFile] = useState<File | null>(null)
@@ -32,6 +33,7 @@ export default function PaymentModal({
   useEffect(() => {
     if (isOpen) {
       setStep('selection')
+      setSelectedMethod(null)
       setCreatedOrder(null)
       setQrImage(null)
       setSlipFile(null)
@@ -61,12 +63,19 @@ export default function PaymentModal({
       setSlipPreview(null)
     }
   }
-  const handleSelectMethod = async (method: PaymentMethod) => {
+  const handleSelectMethod = (method: PaymentMethod) => {
     if (!items || items.length === 0) {
       alert('กรุณาเลือกสินค้าก่อนชำระเงิน')
       onClose()
       return
     }
+    setSelectedMethod(method)
+    setStep('confirm')
+  }
+
+  const handleConfirmCreate = async () => {
+    const method = selectedMethod
+    if (!method) return
 
     setStep('processing')
     try {
@@ -137,7 +146,7 @@ export default function PaymentModal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
-        onClick={step === 'selection' || step === 'cash_instruction' || step === 'success' ? onClose : undefined}
+        onClick={step === 'selection' || step === 'confirm' || step === 'cash_instruction' || step === 'success' ? onClose : undefined}
       />
       <div className="relative w-full max-w-md bg-[#1e1915] border border-[#3e352d] rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 slide-in-from-bottom-10 duration-300">
 
@@ -172,6 +181,52 @@ export default function PaymentModal({
               </div>
             )}
             <button onClick={onClose} className="w-full py-4 text-gray-500 hover:text-white transition-colors">ยกเลิก</button>
+          </div>
+        )}
+
+        {/* ─── ยืนยันก่อนสร้างออเดอร์ ─── */}
+        {step === 'confirm' && (
+          <div className="p-8 space-y-6 text-center">
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold text-white">ยืนยันการสั่งซื้อ</h3>
+              <p className="text-gray-400 text-sm">
+                {selectedMethod === 'promptpay'
+                  ? 'เลือก PromptPay แล้ว กดยืนยันเพื่อสร้างออเดอร์และแสดง QR'
+                  : selectedMethod === 'cash'
+                    ? 'เลือกเงินสดแล้ว กดยืนยันเพื่อรับบัตรคิว'
+                    : ''}
+              </p>
+            </div>
+
+            <div className="bg-[#2a241f] border border-[#3e352d] rounded-3xl p-6 space-y-3 text-left">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">โต๊ะ</span>
+                <span className="text-white font-bold">{positionId || 'ไม่ระบุ'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">ยอดรวม</span>
+                <span className="text-white font-bold">{total.toLocaleString()}฿</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">วิธีชำระเงิน</span>
+                <span className="text-white font-bold">
+                  {selectedMethod === 'promptpay' ? 'PromptPay' : selectedMethod === 'cash' ? 'เงินสด' : '-'}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleConfirmCreate}
+              className="w-full py-5 bg-[#cba365] text-[#26211d] rounded-2xl font-black text-xl active:scale-95 transition-transform"
+            >
+              ยืนยัน
+            </button>
+            <button
+              onClick={() => { setSelectedMethod(null); setStep('selection') }}
+              className="w-full py-3 text-gray-500 hover:text-white transition-colors text-sm"
+            >
+              กลับไปเลือกวิธีชำระเงิน
+            </button>
           </div>
         )}
 

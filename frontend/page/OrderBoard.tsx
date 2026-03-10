@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { fetchOrders, updateOrderStatus, updatePaymentStatus, type Order } from '@/service/api'
+import { fetchOrders, updateOrderStatus, updatePaymentStatus, login, getCurrentUser, type Order } from '@/service/api'
 import { getServerUrl } from '@/service/config'
 
 /* ─── Helpers ─── */
@@ -63,6 +63,12 @@ export default function OrderBoard() {
     const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const prevCountRef = useRef<number>(0)
+
+    const [pinModalOrderId, setPinModalOrderId] = useState<string | null>(null)
+    const [pinStaffId, setPinStaffId] = useState('')
+    const [pin, setPin] = useState('')
+    const [pinError, setPinError] = useState<string | null>(null)
+    const [pinVerifying, setPinVerifying] = useState(false)
 
     // ─── Data Fetching ───
     const loadOrders = useCallback(async (showLoading = false) => {
@@ -159,6 +165,36 @@ export default function OrderBoard() {
             loadOrders(false)
         } finally {
             setUpdatingId(null)
+        }
+    }
+
+    const openPinModalForUndo = (orderId: string) => {
+        const u = getCurrentUser()
+        setPinStaffId(u?.id ?? '')
+        setPin('')
+        setPinError(null)
+        setPinModalOrderId(orderId)
+    }
+
+    const handleConfirmUndoWithPin = async () => {
+        if (!pinModalOrderId) return
+        const staffId = pinStaffId.trim()
+        const p = pin.trim()
+        if (!staffId) { setPinError('กรุณากรอกรหัสพนักงาน'); return }
+        if (!p) { setPinError('กรุณากรอก PIN'); return }
+
+        setPinVerifying(true)
+        setPinError(null)
+        try {
+            await login(staffId, p) // ตรวจรหัสผ่าน (admin หรือ staff)
+            const orderId = pinModalOrderId
+            setPinModalOrderId(null)
+            await handleUndoComplete(orderId)
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : 'PIN ไม่ถูกต้อง'
+            setPinError(msg)
+        } finally {
+            setPinVerifying(false)
         }
     }
 
@@ -299,7 +335,7 @@ export default function OrderBoard() {
                                             order={order}
                                             index={i}
                                             completed
-                                            onUndo={() => handleUndoComplete(order.order_id)}
+                                            onUndo={() => openPinModalForUndo(order.order_id)}
                                             onViewReceipt={(url) => setPreviewUrl(url)}
                                             isUpdating={updatingId === order.order_id}
                                         />
@@ -314,6 +350,75 @@ export default function OrderBoard() {
             {/* Receipt Modal */}
             {previewUrl && (
                 <ReceiptModal url={previewUrl} onClose={() => setPreviewUrl(null)} />
+            )}
+
+            {/* PIN Confirm Modal (Undo) */}
+            {pinModalOrderId && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+                    <div className="absolute inset-0" onClick={() => (pinVerifying ? null : setPinModalOrderId(null))} />
+                    <div className="relative w-full max-w-sm bg-[#1e1915] border border-[#3e352d] rounded-3xl p-6 shadow-2xl">
+                        <div className="text-center mb-5">
+                            <div className="text-3xl mb-2">🔒</div>
+                            <h3 className="text-xl font-black">ยืนยันเพื่อย้อนกลับ</h3>
+                            <p className="text-gray-500 text-sm mt-1">กรอกรหัส Admin หรือ Staff</p>
+                        </div>
+
+                        {pinError && (
+                            <div className="mb-4 bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl px-4 py-3 text-sm text-center">
+                                {pinError}
+                            </div>
+                        )}
+
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs text-gray-500 block mb-1">รหัสพนักงาน</label>
+                                <input
+                                    value={pinStaffId}
+                                    onChange={(e) => setPinStaffId(e.target.value)}
+                                    className="w-full bg-[#2a241f] border border-[#3e352d] rounded-xl px-4 py-3 text-white outline-none focus:border-[#cba365]"
+                                    placeholder="เช่น admin, cashier"
+                                    autoComplete="username"
+                                    disabled={pinVerifying}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs text-gray-500 block mb-1">PIN</label>
+                                <input
+                                    value={pin}
+                                    onChange={(e) => { if (/^\\d*$/.test(e.target.value)) setPin(e.target.value) }}
+                                    inputMode="numeric"
+                                    type="password"
+                                    className="w-full bg-[#2a241f] border border-[#3e352d] rounded-xl px-4 py-3 text-white outline-none focus:border-[#cba365] tracking-[0.25em]"
+                                    placeholder="••••"
+                                    autoComplete="current-password"
+                                    disabled={pinVerifying}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-6 grid grid-cols-2 gap-3">
+                            <button
+                                onClick={() => setPinModalOrderId(null)}
+                                disabled={pinVerifying}
+                                className="py-3 rounded-xl border border-[#3e352d] text-gray-300 hover:bg-[#2a241f] transition-colors disabled:opacity-50"
+                            >
+                                ยกเลิก
+                            </button>
+                            <button
+                                onClick={handleConfirmUndoWithPin}
+                                disabled={pinVerifying}
+                                className="py-3 rounded-xl bg-[#cba365] text-[#26211d] font-black hover:bg-[#dfb572] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {pinVerifying ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-[#26211d]/30 border-t-[#26211d] rounded-full animate-spin" />
+                                        กำลังตรวจสอบ...
+                                    </>
+                                ) : 'ยืนยัน'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </main>
     )

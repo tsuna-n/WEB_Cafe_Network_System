@@ -141,10 +141,11 @@ export async function createOrder(
   });
 }
 
-export async function fetchOrders(date?: string, status?: string): Promise<Order[]> {
+export async function fetchOrders(date?: string, status?: string, payment_status?: string): Promise<Order[]> {
   const params = new URLSearchParams();
   if (date) params.set('date', date);
   if (status) params.set('status', status);
+  if (payment_status) params.set('payment_status', payment_status);
   const q = params.toString();
   return request(`/api/orders${q ? `?${q}` : ''}`);
 }
