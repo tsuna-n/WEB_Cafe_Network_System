@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# UPLORD
+/uplords/releases/*
+
 # production
 /build
 
